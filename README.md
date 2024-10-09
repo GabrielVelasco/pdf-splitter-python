@@ -48,6 +48,10 @@ A simple GUI application that splits PDF files into smaller parts based on file 
    ```bash
    python3 spdf_gui.py
    ```
+   or
+   ```bash
+   Google how to run a python script on your machine
+   ```
 
 ### Creating the Executable
 
