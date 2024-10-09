@@ -23,15 +23,9 @@ A simple GUI application that splits PDF files into smaller parts based on file 
 
 ## For Developers
 
-### Prerequisites
+### Python version
 
-- Python 3.12.7
-- Required packages:
-  ```
-  pip install tkinter
-  pip install PyPDF2
-  pip install pyinstaller  # Only needed for creating executable
-  ```
+- Python 3.12.7 (or one compatible with all dependencies used)
 
 ### Running from Source
 
@@ -43,29 +37,27 @@ A simple GUI application that splits PDF files into smaller parts based on file 
 
 2. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install tkinter PyPDF2 pyinstaller
    ```
 
 3. Run the application:
    ```bash
    python spdf_gui.py
    ```
+   or
+   ```bash
+   python3 spdf_gui.py
+   ```
 
 ### Creating the Executable
 
-To create a standalone executable:
+To create a standalone executable (.bin on Linux or .exe on Windows):
 
 ```bash
 pyinstaller --onefile --windowed spdf_gui.py
 ```
 
 The executable will be created in the `dist` directory.
-
-#### Build Options Explained:
-- `--onefile`: Creates a single executable file
-- `--windowed`: Prevents console window from appearing when running the executable
-
-### Project Structure
 
 ```
 pdf-splitter/
@@ -75,4 +67,4 @@ pdf-splitter/
 
 ## How It Works
 
-Explained throughout the code...
+Explained throughout the code (I guess)...
