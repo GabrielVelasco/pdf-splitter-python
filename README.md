@@ -63,12 +63,6 @@ pyinstaller --onefile --windowed spdf_gui.py
 
 The executable will be created in the `dist` directory.
 
-```
-pdf-splitter/
-├── spdf_gui.py          # Main application source
-├── spdf_gui.exe         # Compiled executable
-```
-
 ## How It Works
 
 Explained throughout the code (I guess)...
