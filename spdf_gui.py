@@ -222,30 +222,6 @@ class PdfSplitterGUI:
             accumulated_size = 0
             
             for page_num in range(total_pages):
-                if page_sizes[page_num] > part_size_bytes:
-                    msg = f"Page {page_num + 1} ({page_sizes[page_num] / 1024 / 1024 :.2f} ) MB is larger than the target part size ({part_size_mb} MB).\nDo you want to include it as a single part?"
-
-                    include_page = self.ask_user_from_main_thread(msg)
-                
-                    if include_page:
-                        single_page_writer = PdfWriter()
-                        single_page_writer.add_page(pdf_reader.pages[page_num])
-
-                        output_filename = f"{os.path.splitext(os.path.basename(input_path))[0]}_part_{current_part}.pdf"
-                        output_path = os.path.join(output_folder, output_filename)
-
-                        with open(output_path, "wb") as output_file:
-                            single_page_writer.write(output_file) # write to file
-
-                        total_pages_final += 1
-
-                        self.log_message(f"Saved single page {page_num + 1} as part {current_part}")
-                        current_part += 1
-                    
-                    else:
-                        self.log_message(f"Skipping page {page_num + 1} (too large)")
-                    continue
-
                 accumulated_size += page_sizes[page_num] # simulate adding page to writer
                 
                 if accumulated_size >= part_size_bytes:
@@ -261,12 +237,11 @@ class PdfSplitterGUI:
                     total_pages_final += finished_part_length
                     self.log_message(f"Part #{current_part} has {finished_part_length} pages.")
                     
+                    # start new part
                     current_part += 1
                     current_writer = PdfWriter()
                     current_page_count = 0
-                    page_num -= 1 # reprocess the current page in the new writer
-                    accumulated_size = 0
-                    continue
+                    accumulated_size = page_sizes[page_num]
 
                 current_writer.add_page(pdf_reader.pages[page_num]) # add page to writer for real
                 current_page_count += 1
