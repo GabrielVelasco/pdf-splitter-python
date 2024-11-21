@@ -8,7 +8,7 @@ from threading import Thread, Event
 import queue
 
 """
-    # Main thread (GUI)        <>        # Worker thread (PDF processing)
+    # main thread (GUI)        <>        # worker thread (PDF proc...)
                               
     button clicked
     └─> start_processing()
@@ -16,7 +16,7 @@ import queue
                 └─> return to GUI         │
                                           ├─> log_message() queues updates
     GUI remains responsive                │     └─> messages added to queue
-    └─> update_output()                   │
+    └─> update_output() at each N sec     │
             └─> check queue <─────────────┘
                 └─> update text widget
 """
@@ -40,6 +40,7 @@ class PdfSplitterGUI:
 
     def ask_user_from_main_thread(self, msg):
         """
+            Gambiarra...
             Ask the user for a response in a separate dialog window.
             This method is called from the main thread and waits for the user to respond.
         """
@@ -57,26 +58,22 @@ class PdfSplitterGUI:
 
         return self.dialog_response
 
-    # get the path to the bundled custom icon file (use flag: --add-data="cropped-zarro-icon.ico;." with PyInstaller)
+    # get the path to the bundled custom icon file (must use flag: --add-data="cropped-zarro-icon.ico;." with PyInstaller)
     def resource_path(self, relative_icon_path):
         if hasattr(sys, '_MEIPASS'):
-            # If running from PyInstaller's bundle
-            return os.path.join(sys._MEIPASS, relative_icon_path)
+            return os.path.join(sys._MEIPASS, relative_icon_path) # using PyInstaller...
         else:
-            # If running in a normal Python environment
             return os.path.join(os.path.abspath("."), relative_icon_path)
 
     def create_widgets(self):
-        # Main frame with padding
         main_frame = ttk.Frame(self.root, padding="10", style="Custom.TFrame")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         
-        # Input file section with file selector
+        # input file section
         ttk.Label(main_frame, text="Selected PDF:", style="Custom.TLabel").grid(row=0, column=0, sticky=tk.W, pady=5)
         
-        # Frame for file input and button
         file_frame = ttk.Frame(main_frame, style="Custom.TFrame")
         file_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
         file_frame.columnconfigure(0, weight=1)
@@ -87,17 +84,17 @@ class PdfSplitterGUI:
         select_btn = ttk.Button(file_frame, text="Browse", command=self.select_file, style="Custom.TButton")
         select_btn.grid(row=0, column=1, padx=(5, 0))
         
-        # Part size section
+        # part size select
         ttk.Label(main_frame, text="Part Size (MB):", style="Custom.TLabel").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.part_size = ttk.Combobox(main_frame, values=[1, 2, 5, 10, 20, 50])
         self.part_size.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5)
         self.part_size.set(5)
         
-        # Split PDF button
+        # subtmit button
         self.process_btn = ttk.Button(main_frame, text="Split PDF", command=self.start_processing, style="Custom.TButton")
         self.process_btn.grid(row=2, column=0, columnspan=2, pady=10)
         
-        # Output text frame
+        # output log...
         output_frame = ttk.LabelFrame(main_frame, text="Logs...", padding="5", style="Custom.TLabelframe")
         output_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
         main_frame.rowconfigure(3, weight=1)
@@ -106,7 +103,7 @@ class PdfSplitterGUI:
         self.output_text = scrolledtext.ScrolledText(output_frame, height=15) #
         self.output_text.pack(fill=tk.BOTH, expand=True)
         
-        # Status bar
+        # status bar
         self.status_var = tk.StringVar()
         self.status_var.set("Waiting for input...")
         self.status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN, style="Custom.TLabel")
@@ -127,14 +124,16 @@ class PdfSplitterGUI:
             self.input_file.delete(0, tk.END)
             self.input_file.insert(0, filename)
 
-    def log_message(self, message):
+    def add_log_message(self, message):
+        # add messages to queue, to be processed by the main thread, GUI, (producer), at each N secs
+
         self.message_queue.put(message)
     
     def update_output(self):
         """
-            At each call, get messages from the queue and update the output text.
-            Using this method (producer-comsumer pattern) prevents the GUI from freezing (thread-safe)
-
+            consumer...
+            get messages from the queue and update the output text...
+            updates the output text widget with messages from the queue at each N seconds, at the main thread.
         """
 
         try:
@@ -152,7 +151,7 @@ class PdfSplitterGUI:
     
     def start_processing(self):
         """
-            Get selected file and part size, then start the PDF splitting process in a separate thread.
+            get selected file/part size, then start the PDF splitting process in a separate thread.
         """
 
         input_file = self.input_file.get()
@@ -173,7 +172,7 @@ class PdfSplitterGUI:
         self.process_btn.state(['disabled'])
         self.status_var.set("Processing...")
         
-        # If everything ok, start processing in a separate thread (worker thread)
+        # start processing in a separate thread (worker thread)
         Thread(target=self.split_pdf, args=(input_file, "output", part_size), daemon=True).start()
 
     def get_page_sizes(self, pdf_reader):
@@ -199,20 +198,28 @@ class PdfSplitterGUI:
         return page_sizes
     
     def split_pdf(self, input_path, output_folder, part_size_mb):
+        """
+            function that will actually split the PDF file into parts of a maximum given size...
+
+            Args:
+                input_path: str, path to the input PDF file
+                output_folder: str, path to the output folder where the parts will be saved
+                part_size_mb: int, maximum size of each part in MB
+        """
+
         try:
-            # If folder 'output' exists, delete it, if not, create it
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
             else:
                 for file in os.listdir(output_folder):
                     os.remove(os.path.join(output_folder, file))
             
-            # Open the PDF file
-            self.log_message(f"Opening PDF: {input_path}")
+            # open the input PDF file
+            self.add_log_message(f"Opening PDF: {input_path}")
             pdf_reader = PdfReader(input_path)
             page_sizes = self.get_page_sizes(pdf_reader)
             total_pages = len(pdf_reader.pages)
-            self.log_message(f"Original PDF total pages count: {total_pages}")
+            self.add_log_message(f"Original PDF total pages count: {total_pages}")
             
             part_size_bytes = part_size_mb * 1024 * 1024
             current_part = 1
@@ -235,7 +242,7 @@ class PdfSplitterGUI:
                         current_writer.write(output_file) # write to file
                     
                     total_pages_final += finished_part_length
-                    self.log_message(f"Part #{current_part} has {finished_part_length} pages.")
+                    self.add_log_message(f"Part #{current_part} has {finished_part_length} pages.")
                     
                     # start new part
                     current_part += 1
@@ -254,24 +261,24 @@ class PdfSplitterGUI:
                 with open(output_path, "wb") as output_file:
                     current_writer.write(output_file)
 
-                self.log_message(f"Part #{current_part} has {current_page_count} pages.")
+                self.add_log_message(f"Part #{current_part} has {current_page_count} pages.")
                 total_pages_final += current_page_count
             
-            self.log_message(f"PDF splited into {current_part} parts.")
+            self.add_log_message(f"PDF splited into {current_part} parts.")
             
             if total_pages_final != total_pages:
-                self.log_message(f"WARNING: Total pages in parts ({total_pages_final}) does not match original PDF ({total_pages})")
+                self.add_log_message(f"WARNING: Total pages in parts ({total_pages_final}) does not match original PDF ({total_pages})")
             else:
-                self.log_message(f"Total pages in parts match original PDF: {total_pages_final}")
+                self.add_log_message(f"Total pages in parts match original PDF: {total_pages_final}")
             
             self.status_var.set("Done!")
             
         except Exception as e:
-            self.log_message(f"Error: {str(e)}")
+            self.add_log_message(f"Error: {str(e)}")
             self.status_var.set("Something went wrong!")
 
         finally:
-            self.root.after(0, lambda: self.process_btn.state(['!disabled']))
+            self.root.after(0, lambda: self.process_btn.state(['!disabled'])) # finally enable the button again
 
 def main():
     root = tk.Tk()
